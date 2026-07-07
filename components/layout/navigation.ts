@@ -76,18 +76,20 @@ export const HEADER_ACTIONS = {
   getStarted: { label: "Get Started", href: "/contact" },
 };
 
-// Expanded per explicit requirement (WEB-CALC-2 Sprint C) to already
-// reflect the shape of the wider HustlerPay ecosystem (Developers portal,
-// Partners, Status, SDKs) even though most of these don't exist yet —
-// same real-or-"Bientôt" rule as the header. "Developers" appears both as
-// its own column (specific developer resources) and as a Resources link
-// (a future developer portal/community hub) — intentional, not a
-// duplication bug, per the user's own spec.
+// Restructured per explicit requirement (WEB-CALC-2 Sprint C refinement)
+// to reflect the shape of the wider HustlerPay ecosystem (Developers
+// portal, Partners, Status, SDKs, Roadmap) even though most of these
+// don't exist yet — same real-or-"Bientôt" rule as the header: an item
+// only gets a real href if a real destination exists today, everything
+// else is comingSoon regardless of how casually it reads. "Developers"
+// appears both as its own column (specific developer resources) and as a
+// Resources link (a future developer portal/community hub) —
+// intentional, not a duplication bug, per the user's own spec.
 export const FOOTER_COLUMNS: { title: string; items: NavLink[] }[] = [
   {
-    title: "Product",
+    title: "Platform",
     items: [
-      { label: "Platform", href: "/#features" },
+      { label: "Overview", href: "/#features" },
       { label: "Dashboard", href: "https://app.hustlerpay.com", external: true },
       { label: "Smart Calculator", href: "", comingSoon: true },
       { label: "API", href: "", comingSoon: true },
@@ -98,8 +100,8 @@ export const FOOTER_COLUMNS: { title: string; items: NavLink[] }[] = [
     items: [
       { label: "Documentation", href: "", comingSoon: true },
       { label: "API Reference", href: "", comingSoon: true },
-      { label: "Webhooks", href: "", comingSoon: true },
       { label: "SDKs", href: "", comingSoon: true },
+      { label: "Changelog", href: "", comingSoon: true },
       { label: "Status", href: "", comingSoon: true },
     ],
   },
@@ -117,9 +119,9 @@ export const FOOTER_COLUMNS: { title: string; items: NavLink[] }[] = [
     title: "Resources",
     items: [
       { label: "Partners", href: "", comingSoon: true },
-      { label: "Developers", href: "", comingSoon: true },
+      { label: "Developers Portal", href: "", comingSoon: true },
       { label: "Support", href: "", comingSoon: true },
-      { label: "Changelog", href: "", comingSoon: true },
+      { label: "Roadmap", href: "", comingSoon: true },
     ],
   },
 ];

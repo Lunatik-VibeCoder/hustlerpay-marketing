@@ -1,19 +1,17 @@
-import type { Metadata } from "next";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { ContactForm } from "./ContactForm";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = buildMetadata({
   title: "Contact — HustlerPay",
-  description: "Contactez l'équipe HustlerPay.",
-};
+  description: "Contactez l'équipe HustlerPay pour toute question sur la plateforme.",
+  path: "/contact",
+});
 
-// Coordonnées réelles à fournir — jamais un email/téléphone/adresse
-// inventé affiché comme réel sur une page publique. Remplacer ces 3
-// valeurs (et retirer ce commentaire) dès qu'elles sont communiquées.
 const CONTACT_INFO = {
-  email: "À compléter",
-  phone: "À compléter",
-  address: "À compléter",
+  email: "contact@hustlerpay.com",
+  phone: "+229 01 97 19 94 74",
+  address: "Lot 800 D Sehogan, Cotonou, Bénin",
 };
 
 export default function ContactPage() {
@@ -30,11 +28,15 @@ export default function ContactPage() {
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <Mail className="h-5 w-5 text-primary shrink-0" />
-            <span className="text-sm text-foreground">{CONTACT_INFO.email}</span>
+            <a href={`mailto:${CONTACT_INFO.email}`} className="text-sm text-foreground hover:text-primary">
+              {CONTACT_INFO.email}
+            </a>
           </div>
           <div className="flex items-center gap-3">
             <Phone className="h-5 w-5 text-primary shrink-0" />
-            <span className="text-sm text-foreground">{CONTACT_INFO.phone}</span>
+            <a href={`tel:${CONTACT_INFO.phone.replace(/\s/g, "")}`} className="text-sm text-foreground hover:text-primary">
+              {CONTACT_INFO.phone}
+            </a>
           </div>
           <div className="flex items-center gap-3">
             <MapPin className="h-5 w-5 text-primary shrink-0" />

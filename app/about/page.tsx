@@ -1,41 +1,48 @@
-import type { Metadata } from "next";
 import { LegalPageLayout } from "@/components/layout/LegalPageLayout";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = buildMetadata({
   title: "À propos — HustlerPay",
-  description: "Pourquoi HustlerPay existe et le problème que nous résolvons.",
-};
+  description: "HustlerPay est une plateforme d'infrastructure Mobile Money pour les entreprises.",
+  path: "/about",
+});
 
-// Real narrative — grounded in what HustlerPay actually does today, not
-// an invented founding story (no dates/names/funding claims fabricated).
+// Real mission content — no invented customer counts or company history.
 export default function AboutPage() {
   return (
     <LegalPageLayout title="À propos de HustlerPay">
       <section>
-        <h2>Le problème que nous résolvons</h2>
+        <h2>Notre mission</h2>
         <p>
-          Les agents et entreprises Mobile Money traitent chaque jour un volume important d&apos;opérations USSD
-          manuelles — dépôts, retraits, transferts, achats de crédit — saisies à la main dans l&apos;interface de
-          l&apos;opérateur. Cette saisie manuelle est source d&apos;erreurs, difficile à superviser à l&apos;échelle
-          de plusieurs appareils, et ne laisse aucune trace d&apos;audit facilement exploitable.
+          HustlerPay est une plateforme d&apos;infrastructure Mobile Money conçue pour les entreprises qui opèrent
+          à travers plusieurs opérateurs Mobile Money. Nous construisons les outils nécessaires pour orchestrer,
+          superviser et sécuriser ces opérations à l&apos;échelle d&apos;une organisation, pas seulement d&apos;un
+          agent isolé.
         </p>
       </section>
       <section>
-        <h2>Notre approche</h2>
+        <h2>Une architecture pensée pour les organisations</h2>
         <p>
-          HustlerPay automatise ce travail répétitif à travers MoMo Assistant, notre outil pour les appareils
-          agents, et centralise la supervision — trésorerie, bénéficiaires, organisations, journal d&apos;audit —
-          dans un tableau de bord unique. L&apos;objectif n&apos;est pas de remplacer les opérateurs Mobile Money,
-          mais d&apos;orchestrer et de sécuriser la façon dont vos équipes les utilisent.
+          La plateforme repose sur une architecture par organisation : chaque entreprise gère ses propres
+          utilisateurs, appareils, bénéficiaires et trésorerie, avec des rôles et permissions dédiés. HustlerPay
+          orchestre plusieurs appareils Mobile Money à la fois, automatise leur exécution, et fait remonter chaque
+          opération dans un tableau de bord unique.
         </p>
       </section>
       <section>
-        <h2>Notre vision</h2>
+        <h2>Ce que nous construisons</h2>
+        <ul>
+          <li>Une orchestration multi-appareils pour les opérations Mobile Money.</li>
+          <li>Une gestion de trésorerie par organisation.</li>
+          <li>Une automatisation du Runtime d&apos;exécution.</li>
+          <li>Une plateforme conçue API-first, pensée pour l&apos;intégration dès le départ.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Où nous en sommes</h2>
         <p>
-          Qu&apos;une transaction provienne d&apos;une automatisation planifiée, d&apos;un appareil agent, ou
-          d&apos;une future intégration avec les rapports opérateur, elle doit converger vers un registre unique et
-          fiable. Chaque transaction doit rester explicable : son origine, l&apos;appareil concerné, et la preuve
-          qui la confirme.
+          HustlerPay est initialement déployé au Ghana et au Bénin, et conçu pour s&apos;étendre à d&apos;autres
+          marchés africains à mesure que la plateforme mûrit.
         </p>
       </section>
     </LegalPageLayout>

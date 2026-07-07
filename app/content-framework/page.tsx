@@ -1,6 +1,7 @@
 import { StaticContentProvider } from "@/content/StaticContentProvider";
 import { SectionRenderer } from "@/content/SectionRenderer";
 import { notFound } from "next/navigation";
+import { buildNoIndexMetadata } from "@/lib/seo";
 
 // WEB-CALC-1 Sprint B — proves ContentProvider -> SectionRenderer end to
 // end as a real Server Component (async data fetch, not just a client
@@ -8,6 +9,13 @@ import { notFound } from "next/navigation";
 // pattern (provider.getPage(slug) -> notFound() guard -> SectionRenderer),
 // just pointed at "home" once real sections exist there.
 const provider = new StaticContentProvider();
+
+// Internal engineering demo, not a real marketing page — noindex so it
+// never surfaces in search results alongside the real site.
+export const metadata = buildNoIndexMetadata({
+  title: "Content Framework (demo)",
+  description: "Internal demo of the ContentProvider -> SectionRenderer pipeline.",
+});
 
 export default async function ContentFrameworkDemoPage() {
   const page = await provider.getPage("home");
