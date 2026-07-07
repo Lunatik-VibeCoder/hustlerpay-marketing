@@ -24,6 +24,11 @@ additional flagged items (a Dashboard-migration question, and §6's SEO
 value being dependent on open question #1). This is the version Sprint A
 is gated on.
 
+Follow-up addition (still Sprint 0, still before freeze): §12 (Quote
+Engine Contract) added per explicit user request — the Local/Backend
+implementation split the interface must support, so Sprint A can build
+real UI without prejudging where the production engine ends up living.
+
 ## Framing
 
 The Smart Calculator is not a marketing-site widget. It is the first
@@ -435,6 +440,72 @@ policy), and whether that policy differs per consumer (a Partner
 integration plausibly needs a longer support window than the Marketing
 site itself, which redeploys on every push). This is a business/support
 decision, not an engineering one — flagged, not answered.
+
+---
+
+## 12. Quote Engine Contract — implementation-agnostic by construction
+
+Added per explicit user requirement, ahead of Sprint A. The business
+contract must never depend on *where* the Quote Engine actually runs:
+
+```
+Marketing
+        │
+        ▼
+Quote Engine (interface)
+        │
+        ├── Local TypeScript implementation (development / prototype)
+        │
+        └── Backend HTTP implementation (production)
+```
+
+- **The UI/consuming code depends on exactly one interface** (naming
+  illustrative, e.g. `QuoteEngineProvider` — the exact shape is a Sprint
+  A/B decision, not this document's) — never on a concrete
+  implementation. This is the same shape already proven twice in this
+  ecosystem: `ContentProvider` (`getPage(slug): Promise<PageContent |
+  null>`, `StaticContentProvider` as its sole implementation today) and
+  the Dashboard's own equivalent abstractions. Not a new pattern
+  invented for the Calculator — a deliberate reuse of one already
+  trusted here.
+- **Two implementations are anticipated, not more invented**: a
+  **Local TypeScript implementation** (in-process, no network call —
+  used *only* for Sprint A prototyping/demo, and constrained by the
+  Sprint A entry criterion already established above: it must return
+  clearly-labeled placeholder data, never anything that resembles a
+  real computed quote) and a **Backend HTTP implementation** (calls the
+  real `/api/v1/quotes` contract, §8 — the actual production
+  implementation, wired once open question #1, where the engine lives,
+  is resolved).
+- **Swapping implementations must be a single change at the composition
+  root** (wherever the interface is instantiated/injected for a given
+  build), with zero changes to any component that calls the interface.
+  This is the literal test of whether the abstraction is doing its job
+  — if switching from Local to Backend ever requires touching a
+  consuming component, the interface has leaked implementation details
+  and isn't doing what this section requires.
+- **Precedent, both ways**: this mirrors `ContentProvider`/
+  `StaticContentProvider` (a second implementation is genuinely expected
+  later — a real CMS — so the abstraction earns its cost). It does
+  *not* mirror the fate of `ContactSubmitter`/`NoopContactSubmitter`,
+  which was deliberately removed in WEB-CALC-2 Sprint C for having no
+  real second implementation in sight — worth naming explicitly so a
+  future session doesn't read "we removed ContactSubmitter" as evidence
+  against building this one. The difference is real: the Quote Engine
+  has two concretely-planned implementations from day one (this
+  section), Contact never did.
+- **Does not resolve open question #1** — it explicitly defers that
+  decision by making the engine's location swappable rather than
+  deciding it now. What it does guarantee: Sprint A can build real UI
+  against a Local implementation (satisfying the Sprint A entry
+  criterion) without that choice ever leaking into how Sprint B wires up
+  the real, backend-hosted engine later.
+- **Naming/deployment honesty is part of this contract, not a Sprint A
+  afterthought**: the Local implementation must be visibly
+  distinguishable as non-production (e.g. only ever wired at a
+  development/demo composition root) and must never be left as a silent
+  fallback in a real deployed build. Stated here so it's a requirement
+  Sprint A is held to, not something improvised mid-implementation.
 
 ---
 
