@@ -42,7 +42,7 @@ export function ContactForm() {
   if (submitted) {
     return (
       <div className="rounded-md border border-border bg-secondary p-4 text-sm text-foreground">
-        Contact functionality will be enabled during public launch. En attendant, contactez-nous directement via
+        L&apos;envoi de formulaire sera activé lors du lancement public. En attendant, contactez-nous directement via
         les coordonnées ci-contre.
       </div>
     );

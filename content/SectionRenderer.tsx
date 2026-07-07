@@ -1,42 +1,64 @@
-import { Section } from "./types";
-import { CardSection } from "./sections/CardSection";
-import { HeroSection } from "./sections/HeroSection";
-import { FAQSection } from "./sections/FAQSection";
-import { FeatureGrid } from "./sections/FeatureGrid";
-import { StatsSection } from "./sections/StatsSection";
-import { TestimonialSection } from "./sections/TestimonialSection";
-import { TimelineSection } from "./sections/TimelineSection";
-import { CTASection } from "./sections/CTASection";
+import { PageSection } from "./types";
+import { CardSection, type CardSectionMetadata } from "./sections/CardSection";
+import { HeroSection, type HeroSectionMetadata } from "./sections/HeroSection";
+import { FAQSection, type FAQSectionMetadata } from "./sections/FAQSection";
+import { FeatureGrid, type FeatureGridMetadata } from "./sections/FeatureGrid";
+import { StatsSection, type StatsSectionMetadata } from "./sections/StatsSection";
+import { TestimonialSection, type TestimonialSectionMetadata } from "./sections/TestimonialSection";
+import { TimelineSection, type TimelineSectionMetadata } from "./sections/TimelineSection";
+import { CTASection, type CTASectionMetadata } from "./sections/CTASection";
 
-type SectionComponent = React.ComponentType<{ metadata: Record<string, unknown> }>;
-
-// The registry — reimplemented pattern, not TGA's code. Adding a new
-// section type is one new entry here, never a switch statement, never a
-// change to how pages fetch/pass content. Each section component narrows
-// its own `metadata` prop type internally (e.g. CardSectionMetadata) —
-// the registry itself only needs to agree they all accept a metadata bag.
-//
-// Each entry below is cast through `unknown` deliberately — a component's
-// own metadata shape (e.g. requiring `title`) is necessarily narrower
-// than the registry's generic `Record<string, unknown>`. Content authors
-// are responsible for matching each section's expected metadata shape;
-// the type system can't enforce that across a heterogeneous registry.
-const SECTION_REGISTRY: Record<string, SectionComponent> = {
-  card: CardSection as unknown as SectionComponent,
-  hero: HeroSection as unknown as SectionComponent,
-  faq: FAQSection as unknown as SectionComponent,
-  featureGrid: FeatureGrid as unknown as SectionComponent,
-  stats: StatsSection as unknown as SectionComponent,
-  testimonials: TestimonialSection as unknown as SectionComponent,
-  timeline: TimelineSection as unknown as SectionComponent,
-  cta: CTASection as unknown as SectionComponent,
+// Pairs each section `type` literal with its own metadata shape — the
+// same pairing PageSection (content/types.ts) already enforces at the
+// content-authoring boundary (content/pages/*.ts, where a human actually
+// types content by hand and a typo is most likely). Keep in lockstep with
+// PageSection's own union.
+type SectionTypeMap = {
+  hero: HeroSectionMetadata;
+  faq: FAQSectionMetadata;
+  featureGrid: FeatureGridMetadata;
+  stats: StatsSectionMetadata;
+  testimonials: TestimonialSectionMetadata;
+  timeline: TimelineSectionMetadata;
+  cta: CTASectionMetadata;
+  card: CardSectionMetadata;
 };
 
-export function SectionRenderer({ sections }: { sections: Section[] }) {
+type SectionComponentMap = {
+  [K in keyof SectionTypeMap]: React.ComponentType<{ metadata: SectionTypeMap[K] }>;
+};
+
+// The registry — reimplemented pattern, not TGA's code. Adding a new
+// section type is one new entry here (plus one line in SectionTypeMap
+// above and PageSection in content/types.ts), never a switch statement.
+// Typed via SectionComponentMap, so assigning the wrong component to a
+// key (e.g. `hero: FAQSection`) now fails to compile — no more
+// `as unknown as SectionComponent` per entry.
+const SECTION_REGISTRY: SectionComponentMap = {
+  card: CardSection,
+  hero: HeroSection,
+  faq: FAQSection,
+  featureGrid: FeatureGrid,
+  stats: StatsSection,
+  testimonials: TestimonialSection,
+  timeline: TimelineSection,
+  cta: CTASection,
+};
+
+export function SectionRenderer({ sections }: { sections: PageSection[] }) {
   return (
     <>
       {sections.map((section) => {
-        const Component = SECTION_REGISTRY[section.type];
+        // One remaining, narrowly-scoped cast: TypeScript can't carry the
+        // correlation between a specific union member's `type` and its
+        // `metadata` shape through a runtime `Record` lookup (a known
+        // TS limitation with "correlated unions"). The real safety net is
+        // upstream — `section` is already a checked `PageSection` here,
+        // so this erasure only affects the render-time dispatch, not
+        // whether the content was authored correctly.
+        const Component = SECTION_REGISTRY[section.type] as
+          | React.ComponentType<{ metadata: unknown }>
+          | undefined;
         if (!Component) {
           if (process.env.NODE_ENV !== "production") {
             console.warn(`SectionRenderer: unknown section type "${section.type}" (id: ${section.id})`);
