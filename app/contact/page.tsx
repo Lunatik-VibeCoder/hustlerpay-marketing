@@ -1,18 +1,13 @@
 import { Mail, Phone, MapPin } from "lucide-react";
 import { ContactForm } from "./ContactForm";
 import { buildMetadata } from "@/lib/seo";
+import { CONTACT_INFO, CONTACT_ADDRESS_DISPLAY } from "@/lib/organization";
 
 export const metadata = buildMetadata({
   title: "Contact — HustlerPay",
   description: "Contactez l'équipe HustlerPay pour toute question sur la plateforme.",
   path: "/contact",
 });
-
-const CONTACT_INFO = {
-  email: "contact@hustlerpay.com",
-  phone: "+229 01 97 19 94 74",
-  address: "Lot 800 D Sehogan, Cotonou, Bénin",
-};
 
 export default function ContactPage() {
   return (
@@ -40,7 +35,7 @@ export default function ContactPage() {
           </div>
           <div className="flex items-center gap-3">
             <MapPin className="h-5 w-5 text-primary shrink-0" />
-            <span className="text-sm text-foreground">{CONTACT_INFO.address}</span>
+            <span className="text-sm text-foreground">{CONTACT_ADDRESS_DISPLAY}</span>
           </div>
         </div>
       </div>

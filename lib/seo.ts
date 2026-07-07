@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 
 // Real, intended production domain (this repo IS hustlerpay.com's
-// marketing site) — not a placeholder guess.
-const SITE_URL = "https://hustlerpay.com";
-const SITE_NAME = "HustlerPay";
+// marketing site) — not a placeholder guess. Exported so robots.ts,
+// sitemap.ts, and the Organization JSON-LD builder share this single
+// value instead of each hand-typing their own copy.
+export const SITE_URL = "https://hustlerpay.com";
+export const SITE_NAME = "HustlerPay";
 
 interface BuildMetadataOptions {
   title: string;
