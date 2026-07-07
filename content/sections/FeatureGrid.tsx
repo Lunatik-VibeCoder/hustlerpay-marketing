@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardTitle, CardDescription } from "@ui/Card";
 import { IconResolver } from "@ui/IconResolver";
+import { Badge } from "@ui/Badge";
 
 export interface Feature {
   /** lucide-react icon name (e.g. "ShieldCheck", "Zap") — resolved by
@@ -8,6 +9,12 @@ export interface Feature {
   icon: string;
   title: string;
   description: string;
+  /** Transparency label for a feature that isn't fully shipped yet (e.g.
+   * "Bientôt disponible", "Beta privée") — never omitted silently for an
+   * incomplete feature, per the "no fabricated claims" rule extended to
+   * marketing copy: a feature listed without this badge is a claim that
+   * it's real and available today. */
+  badge?: string;
 }
 
 export interface FeatureGridMetadata {
@@ -32,8 +39,11 @@ export function FeatureGrid({ metadata }: { metadata: FeatureGridMetadata }) {
           {features.map((feature) => (
             <Card key={feature.title}>
               <CardHeader>
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-accent-foreground mb-2">
-                  <IconResolver name={feature.icon} className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-accent-foreground">
+                    <IconResolver name={feature.icon} className="h-5 w-5" />
+                  </div>
+                  {feature.badge && <Badge variant="warning">{feature.badge}</Badge>}
                 </div>
                 <CardTitle className="text-base">{feature.title}</CardTitle>
                 <CardDescription>{feature.description}</CardDescription>

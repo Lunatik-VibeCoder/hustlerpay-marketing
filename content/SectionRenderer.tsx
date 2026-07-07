@@ -43,7 +43,14 @@ export function SectionRenderer({ sections }: { sections: Section[] }) {
           }
           return null;
         }
-        return <Component key={section.id} metadata={section.metadata} />;
+        // Wrapping div carries the section's own id as an HTML anchor
+        // target (e.g. Hero's secondaryCta linking to "#faq") — generic
+        // for every section, not special-cased to one type.
+        return (
+          <div key={section.id} id={section.id}>
+            <Component metadata={section.metadata} />
+          </div>
+        );
       })}
     </>
   );
