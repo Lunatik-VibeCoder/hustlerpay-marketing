@@ -329,6 +329,63 @@ métier réutilisable, pas un widget."
 
 ---
 
+## 11. Calculator Versioning
+
+Added per explicit user requirement: the **Engine's** version must be
+independent of the **Site's** version. A Marketing deploy (new copy, new
+layout, a new section on the homepage) must never imply a new engine
+version, and a new engine version must never be silently forced onto
+every consumer at once. Six named partners' worth of integrations
+(Website, Dashboard, Public API, Developers SDK, Partners Portal, Mobile
+Apps — §9) cannot all redeploy in lockstep every time a corridor or
+calculation method changes; the architecture must assume they won't.
+
+**Two independent version axes, never conflated:**
+- **Site version** — `hustlerpay-marketing`'s own deploys. Ships UI,
+  copy, layout. Has no bearing on calculation correctness.
+- **Engine version** (`Calculator Engine v1` → `v2` → `v3`, per the
+  user's own framing) — governs the calculation *contract*: which
+  request/response shape, which corridors/networks are recognized,
+  which Fee/Rate rule-sets are active. This is what actually needs
+  stability guarantees for external consumers (Partners, SDK, Developers
+  API) who cannot redeploy the instant HustlerPay changes something.
+
+**What forces a new Engine major version** (illustrative, not
+exhaustive — decided for real once Sprint B defines the actual
+contract): a breaking change to the request/response shape; removing a
+previously-supported corridor/network; a change to how a Quote's
+`metadata` (rule-set version, per §5 point 7) is represented. **What
+does NOT force a new major version**: adding a new corridor/network
+(additive), adding a new optional field to the response, tightening an
+internal Fee/Rate rule while keeping the same request/response contract
+— these are the routine, expected evolutions the versioning scheme
+exists to absorb without breaking anyone.
+
+**Every Quote already carries a rule-set reference by design** (§5,
+point 7) — Calculator Versioning is the *contract-shape* counterpart to
+that: rule-set versioning is "which numbers were used," Engine
+versioning is "which shape of request/response was used." The two are
+related but distinct, and both need to be readable from a Quote after
+the fact.
+
+**Consistency with the rest of the ecosystem**: this is the same
+discipline already applied to the real HustlerPay Runtime API
+(`/api/v1/runtime/...`, §8's own `/api/v1/quotes` convention) — a
+versioned path segment is the minimum bar, not a new idea introduced
+here. What Sprint 0 adds beyond that existing convention is naming the
+requirement to *decouple* the engine's own version from the site's, and
+from the rule-set/data version living inside individual Quotes.
+
+**Deliberately not decided here** (a 7th item to fold into the open
+questions below, not resolved in this document): how long an old Engine
+major version stays supported after a new one ships (a deprecation
+policy), and whether that policy differs per consumer (a Partner
+integration plausibly needs a longer support window than the Marketing
+site itself, which redeploys on every push). This is a business/support
+decision, not an engineering one — flagged, not answered.
+
+---
+
 ## Open questions this document deliberately does not answer
 
 Listed together so none get lost before Sprint A:
@@ -341,6 +398,9 @@ Listed together so none get lost before Sprint A:
 4. Is a shared calculator link "always current rates" or "frozen at
    share time" — or both, as distinct concepts? (§6)
 5. Auth model for non-Marketing API consumers. (§8)
+6. Engine deprecation policy — how long an old major version stays
+   supported after a new one ships, and whether that differs per
+   consumer (Partner vs. Marketing itself). (§11)
 
 ## Naming note (recorded, not a decision made here)
 
