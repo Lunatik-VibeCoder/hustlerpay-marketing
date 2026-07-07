@@ -12,6 +12,18 @@ Sprint 0 time. If a later sprint changes a decision recorded here, that
 change belongs in a new document or a clearly-dated addendum, not a
 silent rewrite of this one.
 
+Revision note (still Sprint 0, before freeze): this version incorporates
+the 8 fixes from the independent Architecture Review that was run
+against the first draft — an auth contradiction between §2/§8, an
+explicit Sprint A data-policy entry criterion, "Mode" added to the
+Domain Model, §9's partner pricing question folded into open question
+#2 instead of being hedged separately, a citation-drift fix in §11, a
+clarified §11 major-version definition (rule *shape* vs. current
+*values*), the engine name unified to "Quote Engine" everywhere, and two
+additional flagged items (a Dashboard-migration question, and §6's SEO
+value being dependent on open question #1). This is the version Sprint A
+is gated on.
+
 ## Framing
 
 The Smart Calculator is not a marketing-site widget. It is the first
@@ -74,7 +86,7 @@ a client component"), that option is flagged as such and rejected.
 | Visitor compares corridors | `/calculator` | none | Needs to hold 2+ quotes side by side without losing either — a UI/state requirement, not just "run the calculation twice." |
 | Visitor decides to contact us | Quote result → `/contact` | none | The Quote's context (corridor, amount) should carry into the Contact form so the conversation starts warm, not from zero. Concrete mechanism (query params, local state) is an Sprint A decision, not this document's. |
 | Existing customer opens Dashboard | Dashboard's own calculator surface | authenticated | Open question, not answered here: does an authenticated customer ever see a *different* rate/fee than the public visitor (negotiated/account-specific pricing)? If yes, the engine needs a notion of "pricing context" from day one — deciding this **after** Sprint B would mean reworking the engine's contract. This is flagged as a required decision before Sprint B starts. |
-| Future partner embeds the calculator | Partner's own page, via SDK/iframe/API | partner API key | Must not require pulling in Marketing's own chrome (Header/Footer/nav) — the calculator's UI shell and the engine must be separable. |
+| Future partner embeds the calculator | Partner's own page, via SDK/iframe/API | **not yet decided** — see §8, open question #5 | Must not require pulling in Marketing's own chrome (Header/Footer/nav) — the calculator's UI shell and the engine must be separable. |
 
 ---
 
@@ -106,6 +118,12 @@ reserved extension points — not built, not stubbed.
 
 Concepts only — no formulas, no persistence schema, no code.
 
+- **Mode** — which kind of calculation is being requested (Money
+  Transfer, Currency Conversion, Fees, ... per §3's registry). Every
+  Fee/Rate resolution (§5) is scoped by Mode as well as by Corridor —
+  the same corridor can have different applicable rules depending on
+  which Mode is being calculated (e.g. a Money Transfer fee schedule
+  need not be the same shape as a Fees-only lookup for that corridor).
 - **Country** — a real-world country HustlerPay actually operates in
   today (Ghana, Bénin). Do not extend this model to Togo/Côte d'Ivoire/
   Burkina Faso for calculation purposes — those exist elsewhere in the
@@ -143,7 +161,12 @@ Concepts only — no formulas, no persistence schema, no code.
 
 ---
 
-## 5. Calculation Engine — Responsibilities
+## 5. Quote Engine — Responsibilities
+
+(Named consistently as **Quote Engine** throughout this document —
+matches the Framing diagram; earlier drafts also used "Calculation
+Engine" and "Calculator Engine" for the same thing, now unified to one
+name.)
 
 Architecture only — no formulas.
 
@@ -225,6 +248,17 @@ SEO entry point, not just a widget.*
   every possible amount/corridor query-string combination be crawled as
   its own "page" — that produces thin/duplicate-content SEO penalties,
   the opposite of the goal.
+- **Dependency on §5's open question, stated explicitly**: the URL/
+  query-string strategy above makes a link *bookmarkable* regardless of
+  where the Quote Engine lives. But if the goal is for a crawler to see
+  **real, server-rendered quote content** (not just an empty shell that
+  fills in client-side) — which is what makes `/calculator` genuinely
+  valuable as an SEO entry point rather than just a deep-linkable widget
+  — the page must be able to call the Quote Engine synchronously at
+  render time. That requires the engine to already be a deployed,
+  network-reachable service, which is exactly what open question #1
+  (§5, where the engine lives) has not yet decided. This SEO section's
+  full value is gated on that decision, not independent of it.
 
 ---
 
@@ -279,9 +313,9 @@ something this document resolves.
 | Consumer | How it uses the engine |
 |---|---|
 | Marketing | Calls the engine's public (anonymous) API surface to power `/calculator`. |
-| Dashboard | Calls the **same** engine (authenticated variant of the same API, or direct call if co-located). Must never show a different number than Marketing for the same inputs — same engine, not a second implementation. |
+| Dashboard | Calls the **same** engine (authenticated variant of the same API, or direct call if co-located). Must never show a different number than Marketing for the same inputs — same engine, not a second implementation. **Open question, not assumed**: does Dashboard already compute quotes/fees somewhere in its existing codebase today? If so, "Dashboard calls the same engine" is a migration of existing logic onto the shared engine, not a greenfield integration — this document assumes greenfield only because no evidence of an existing Dashboard quote/fee implementation was checked; confirm before Sprint B treats this as a clean build. |
 | Developers Portal | Publishes the `/api/v1/quotes` contract as a real, documented public API product. |
-| Partner Portal | Consumes the same API, possibly with partner-specific rate/fee overrides applied *server-side* as configuration — never as a forked copy of the engine's logic. |
+| Partner Portal | Consumes the same API, possibly with partner-specific rate/fee overrides applied *server-side* as configuration — never as a forked copy of the engine's logic. **This is the same class of open question as #2** (does any non-anonymous consumer ever see different pricing than the anonymous public visitor?) — not a separate, lesser-priority question just because it's phrased "possibly" here. |
 | Public API | The same surface the Developers Portal documents, actually running. |
 | SDK | A thin HTTP client wrapping `/api/v1/quotes` — must not reimplement fee/rate math client-side. An SDK that recalculates locally will drift from the server's real rules the moment those rules change. |
 | Mobile Apps | Same principle — call the API, never re-derive calculation logic locally. |
@@ -335,31 +369,40 @@ Added per explicit user requirement: the **Engine's** version must be
 independent of the **Site's** version. A Marketing deploy (new copy, new
 layout, a new section on the homepage) must never imply a new engine
 version, and a new engine version must never be silently forced onto
-every consumer at once. Six named partners' worth of integrations
-(Website, Dashboard, Public API, Developers SDK, Partners Portal, Mobile
-Apps — §9) cannot all redeploy in lockstep every time a corridor or
-calculation method changes; the architecture must assume they won't.
+every consumer at once. The consumers named in the Framing diagram at
+the top of this document (Website, Dashboard, Public API, Developers
+SDK, Partners Portal, Mobile Apps) — expanded to 7 distinct roles in
+§9's own table — cannot all redeploy in lockstep every time a corridor
+or calculation method changes; the architecture must assume they won't.
 
 **Two independent version axes, never conflated:**
 - **Site version** — `hustlerpay-marketing`'s own deploys. Ships UI,
   copy, layout. Has no bearing on calculation correctness.
-- **Engine version** (`Calculator Engine v1` → `v2` → `v3`, per the
-  user's own framing) — governs the calculation *contract*: which
-  request/response shape, which corridors/networks are recognized,
-  which Fee/Rate rule-sets are active. This is what actually needs
-  stability guarantees for external consumers (Partners, SDK, Developers
-  API) who cannot redeploy the instant HustlerPay changes something.
+- **Engine version** (`Quote Engine v1` → `v2` → `v3`, per the user's
+  own framing) — governs the calculation *contract*: which request/
+  response shape, which corridors/networks are recognized, and **which
+  category/shape of Fee/Rate rule the contract is capable of
+  expressing** (e.g. "flat fee" vs. "tiered-by-amount fee" as
+  *representable shapes* — not the specific numeric values currently
+  loaded, which is a separate axis, see below). This is what actually
+  needs stability guarantees for external consumers (Partners, SDK,
+  Developers API) who cannot redeploy the instant HustlerPay changes
+  something.
 
 **What forces a new Engine major version** (illustrative, not
 exhaustive — decided for real once Sprint B defines the actual
 contract): a breaking change to the request/response shape; removing a
-previously-supported corridor/network; a change to how a Quote's
-`metadata` (rule-set version, per §5 point 7) is represented. **What
-does NOT force a new major version**: adding a new corridor/network
-(additive), adding a new optional field to the response, tightening an
-internal Fee/Rate rule while keeping the same request/response contract
-— these are the routine, expected evolutions the versioning scheme
-exists to absorb without breaking anyone.
+previously-supported corridor/network; introducing a genuinely new
+*kind* of Fee/Rate rule the current contract shape cannot represent; a
+change to how a Quote's `metadata` (rule-set version, per §5 point 7) is
+represented. **What does NOT force a new major version**: adding a new
+corridor/network (additive), adding a new optional field to the
+response, or **loading different current values for an existing rule
+shape** (e.g. changing a percentage-fee's actual percentage, or which
+rate-set is active today) while keeping the same request/response
+contract — that kind of change is exactly what the per-Quote rule-set
+reference below exists to track, and does not need a new Engine version
+to do so.
 
 **Every Quote already carries a rule-set reference by design** (§5,
 point 7) — Calculator Versioning is the *contract-shape* counterpart to
@@ -367,6 +410,15 @@ that: rule-set versioning is "which numbers were used," Engine
 versioning is "which shape of request/response was used." The two are
 related but distinct, and both need to be readable from a Quote after
 the fact.
+
+**One clarification this document does make**: only a *major* axis is
+defined above (`v1`/`v2`/`v3`). Every non-major change described (new
+corridor, new optional field, new current rule values) is absorbed
+silently, with no version-number signal at all — the per-Quote rule-set
+reference is what carries visibility for those, not a minor/patch
+version number. Whether a finer-grained minor/patch axis is ever needed
+on top of that is left for Sprint B to decide if the rule-set reference
+alone proves insufficient.
 
 **Consistency with the rest of the ecosystem**: this is the same
 discipline already applied to the real HustlerPay Runtime API
@@ -392,8 +444,14 @@ Listed together so none get lost before Sprint A:
 
 1. Where does the engine live — this repo, or the real HustlerPay
    backend? (§5, blocks Sprint B)
-2. Does an authenticated customer ever see different pricing than an
-   anonymous visitor? (§2, blocks Sprint B's request/response shape)
+2. **Does any non-anonymous consumer — an authenticated Dashboard
+   customer, or a Partner — ever see different pricing than an
+   anonymous public visitor** (negotiated/account-specific rates,
+   partner-specific overrides)? Broadened from "authenticated customer"
+   only, after the review found the Partner-side version of this exact
+   question (§9) was being treated as a lesser, hedged concern instead
+   of the same blocking question. Blocks Sprint B's request/response
+   shape either way. (§2, §9)
 3. Where do real exchange rates come from? (§4, a business decision)
 4. Is a shared calculator link "always current rates" or "frozen at
    share time" — or both, as distinct concepts? (§6)
@@ -401,6 +459,33 @@ Listed together so none get lost before Sprint A:
 6. Engine deprecation policy — how long an old major version stays
    supported after a new one ships, and whether that differs per
    consumer (Partner vs. Marketing itself). (§11)
+7. Does Dashboard already compute quotes/fees somewhere in its existing
+   codebase today? If so, integrating it with the Quote Engine is a
+   migration, not a greenfield build — not yet checked. (§9)
+
+## Sprint A entry criteria (added after the independent Architecture Review)
+
+The review's own conclusion: of the 7 open questions above, only #1 has
+direct bearing on Sprint A (Calculator UI) — and only if Sprint A
+follows the constraint below, which this document previously left
+implied rather than stated:
+
+- **Sprint A must build against the §8 contract shape using clearly-
+  labeled placeholder/mock data.** No UI built in Sprint A may compute
+  or display a real-looking fee/rate number client-side, because no real
+  Quote Engine will exist yet (open question #1 isn't resolved). This is
+  a hard entry condition, not a suggestion — it's what keeps Sprint A
+  from producing UI that quietly assumes an answer to a question this
+  document deliberately left open.
+- **Narrow watch-items, not blockers**: don't lock any shared
+  `packages/ui` component's prop shape around an anonymous-only,
+  single-price assumption (in case open question #2 resolves toward
+  differentiated pricing later); don't build any UI affordance implying
+  a persisted/frozen quote link (open question #4's "frozen" case) until
+  persistence is actually decided — the "share this configuration" query-
+  string flow (§6) is safe to build now.
+- Open questions #3, #5, #6, #7 are correctly irrelevant to a UI-only
+  sprint and can be deferred without any Sprint A precaution.
 
 ## Naming note (recorded, not a decision made here)
 
