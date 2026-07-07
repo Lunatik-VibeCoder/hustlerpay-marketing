@@ -76,6 +76,13 @@ export const HEADER_ACTIONS = {
   getStarted: { label: "Get Started", href: "/contact" },
 };
 
+// Expanded per explicit requirement (WEB-CALC-2 Sprint C) to already
+// reflect the shape of the wider HustlerPay ecosystem (Developers portal,
+// Partners, Status, SDKs) even though most of these don't exist yet —
+// same real-or-"Bientôt" rule as the header. "Developers" appears both as
+// its own column (specific developer resources) and as a Resources link
+// (a future developer portal/community hub) — intentional, not a
+// duplication bug, per the user's own spec.
 export const FOOTER_COLUMNS: { title: string; items: NavLink[] }[] = [
   {
     title: "Product",
@@ -83,37 +90,36 @@ export const FOOTER_COLUMNS: { title: string; items: NavLink[] }[] = [
       { label: "Platform", href: "/#features" },
       { label: "Dashboard", href: "https://app.hustlerpay.com", external: true },
       { label: "Smart Calculator", href: "", comingSoon: true },
+      { label: "API", href: "", comingSoon: true },
     ],
   },
   {
     title: "Developers",
     items: [
-      { label: "API", href: "", comingSoon: true },
       { label: "Documentation", href: "", comingSoon: true },
+      { label: "API Reference", href: "", comingSoon: true },
       { label: "Webhooks", href: "", comingSoon: true },
-      { label: "Changelog", href: "", comingSoon: true },
+      { label: "SDKs", href: "", comingSoon: true },
+      { label: "Status", href: "", comingSoon: true },
     ],
   },
   {
     title: "Company",
     items: [
-      { label: "About", href: "", comingSoon: true },
-      // Not comingSoon: /contact is the same real destination as the
-      // homepage's own Hero/CTA (WEB-CALC-2 Sprint C builds the actual
-      // page next, in this same roadmap) — kept consistent everywhere
-      // rather than half-linked in some places and not others.
+      { label: "About", href: "/about" },
       { label: "Contact", href: "/contact" },
-      { label: "Privacy", href: "", comingSoon: true },
-      { label: "Terms", href: "", comingSoon: true },
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
+      { label: "Cookies", href: "/cookies" },
     ],
   },
   {
     title: "Resources",
     items: [
-      { label: "Status", href: "", comingSoon: true },
       { label: "Partners", href: "", comingSoon: true },
       { label: "Developers", href: "", comingSoon: true },
       { label: "Support", href: "", comingSoon: true },
+      { label: "Changelog", href: "", comingSoon: true },
     ],
   },
 ];
