@@ -19,3 +19,4 @@ export { Toaster, toast } from "./Toast";
 export { QuoteCard, type QuoteCardProps, type QuoteLine } from "./QuoteCard";
 export { CurrencyInput, type CurrencyInputProps } from "./CurrencyInput";
 export { CountrySelector, type CountrySelectorProps, type CountryOption } from "./CountrySelector";
+export { IconResolver } from "./IconResolver";
