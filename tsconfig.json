@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@theme/*": ["./packages/theme/*"],
+      "@ui/*": ["./packages/ui/*"]
     }
   },
   "include": [
