@@ -46,7 +46,11 @@ export function CalculatorClient() {
     const to = searchParams.get("to");
     return isCountryCode(to) ? to : "BJ";
   });
-  const [amount, setAmount] = useState(() => searchParams.get("amount") ?? "");
+  // Same sanitization CurrencyInput applies on typing — a URL-provided
+  // value (?amount=abc) must not bypass it, otherwise arbitrary text
+  // could surface where the contract says "only the user's entered
+  // amount" (Sprint A review, note N2).
+  const [amount, setAmount] = useState(() => (searchParams.get("amount") ?? "").replace(/[^0-9.]/g, ""));
   const [quote, setQuote] = useState<Quote | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
 
