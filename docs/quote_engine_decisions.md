@@ -1,9 +1,20 @@
 # Quote Engine — Architecture Decision Package (WEB-CALC-3 Sprint B0)
 
-Status: **decision package for review — nothing here is decided yet.**
-Sprint B (the first real Quote Engine implementation) starts only after
-each ADR below is explicitly approved, amended, or rejected. Same
-discipline as Sprint 0: architecture → validation → implementation.
+Status: **under final user review before push** — direction approved
+2026-07-08: **ADR-1 ✅ approved** (Backend Quote Engine — "un moteur
+embarqué dans le frontend créerait deux sources de vérité"), **ADR-2 ✅
+approved** (server-resolved pricing context — "le client ne dit jamais
+quel pricing il veut, le backend décide"), **ADR-3 ✅ approved with one
+amendment applied** (the pipeline's components are now named explicitly,
+including the Treasury Rate layer), **ADR-4 revised per user decision**
+(quote references join the platform-wide `HP-<ORG>-<TYPE>-…` hierarchy
+instead of standalone `QP-`/`QT-` prefixes). **INFRA-CI-1 stays
+deferred** to the planned infrastructure maintenance window (with
+INFRA-GIT-1) — Sprint B backend commits will simply be made
+deploy-ready, accepting the deploy-on-every-push reality until then.
+Sprint B implementation starts only after this document is pushed as
+the approved record. Same discipline as Sprint 0: architecture →
+validation → implementation.
 
 Companion to `docs/smart_calculator_architecture.md` (Sprint 0, frozen).
 This document exists because Sprint 0 deliberately left open questions
@@ -52,13 +63,14 @@ designed for exactly this), and with the ecosystem's anti-premature-
 abstraction track record (C is a REPORT-CONNECTORS-style future
 extraction if scale ever demands it; D is a later optimization).
 
-**Operational note, not a blocker:** the backend repo's
+**Operational note — decided (2026-07-08):** the backend repo's
 `deployment.yml` currently deploys to Railway on *every* push to `main`
-(no `paths:` filter — the exact gap INFRA-CI-1 will close, currently
-deferred with INFRA-GIT-1). Sprint B backend work should be committed
-in deliberate, deploy-ready increments, or INFRA-CI-1 could be pulled
-forward as a 15-minute pre-Sprint-B step. Flagged for the user to
-choose; either works.
+(no `paths:` filter — the exact gap INFRA-CI-1 will close). The user
+explicitly chose **not** to pull INFRA-CI-1 forward: Sprint B backend
+work will be committed in deliberate, deploy-ready increments, and
+INFRA-CI-1 executes together with INFRA-GIT-1 during the already-planned
+dedicated infrastructure maintenance window. The risk is real but
+managed.
 
 ---
 
@@ -102,22 +114,28 @@ A costs one field in the contract and zero speculative logic.
 **Question:** where does the exchange rate in a Quote actually come
 from?
 
-### The layered model (proposed as the *shape*, per the user's own sketch)
+### The layered pipeline (approved shape — components named explicitly, per user amendment)
 
 ```
-Market Source (external FX feed)      ← not wired in v1
+Market Feed      (external market data source, e.g. an FX data provider)   ← not wired in v1
         ↓
-FX Source (HustlerPay's chosen ref)   ← not wired in v1
+Reference FX     (HustlerPay's chosen reference rate for a currency pair)  ← not wired in v1
         ↓
-Business Rules (spread, rounding)     ← v1: the administered rate IS this layer
+Treasury Rate    (the rate HustlerPay actually commits to transact at)     ← v1: the administered table IS this layer
         ↓
-Partner Rules (overrides)             ← reserved (ADR-2 context), empty in v1
+Business Rules   (spread, rounding, min/max clamping)                      ← v1: minimal (rounding only), a named seam
         ↓
-Quote Engine
+Partner Rules    (per-partner/per-context overrides, ADR-2's context)      ← reserved, empty in v1
+        ↓
+Quote
 ```
 
-The hierarchy is adopted as the engine's internal resolution order from
-day one — each layer is a named seam, even when a layer is a no-op.
+Each of the five layers is a **named seam in the engine's code from day
+one**, even where a layer is a no-op in v1 — HustlerPay sells a
+commercial commitment (the Treasury Rate), not a mirror of the market;
+the layers above Treasury Rate exist so that, when a Market Feed is
+eventually wired, it *informs* the administered rate rather than
+bypassing it straight to the customer.
 
 ### Options for v1's actual source
 
@@ -151,34 +169,61 @@ established the platform format: **`<product prefix>-yyMMdd-XXXXXX`**
 and unused. Quote references should join this family, not invent a
 third format.
 
-### Proposal
+### Decision (revised per user, 2026-07-08 — supersedes the original standalone-prefix proposal)
 
-- `Quote.reference` becomes a required contract field, generated **by
-  the engine** at generation time (the engine is the identity
-  authority — a reference is proof a specific engine produced a
-  specific result; client-generated IDs would be meaningless for
-  support/debugging).
-- Two prefixes, matching the two engine classes that exist/are planned:
-  - **`QP-`** (Quote Preview) — emitted by `LocalQuoteEngine` and any
-    future demo/preview path. Sprint A's local engine can adopt this
-    immediately (a one-line addition) — even a demo screenshot then
-    carries a citable identity.
-  - **`QT-`** (Quote) — emitted by the real backend engine for genuine
-    quotes. (The user's sketch suggested `QQ`; `QT` is proposed instead
-    purely for legibility — a doubled letter is easy to mis-say/mis-type
-    in support contexts — but this is cosmetic; either is fine and the
-    choice is the user's.)
-- Format: `QP-yyMMdd-XXXXXX` / `QT-yyMMdd-XXXXXX` — identical mechanics
-  to the shipped `ReferenceGenerator`, so any future "HP-TGA-QUOTE-…"
-  style organizational namespacing (the user's longer-term sketch) can
-  be layered as a display/export concern without changing the stored
-  reference.
-- A reference is **not** persistence: `QP-`/`QT-` identify a generation
-  event (logs, screenshots); whether a `QT-` quote is *retrievable
+Quote references join the **platform-wide HustlerPay reference
+hierarchy** rather than introducing standalone `QP-`/`QT-` prefixes as
+the long-term canonical format:
+
+```
+HP - <ORG> - <TYPE> - yyMMdd - <unique suffix>
+
+HP-TGA-QP-250708-8F3K91     (Quote Preview, org TGA)
+HP-TGA-QT-250708-X9K4PL     (real Quote, org TGA — future)
+```
+
+Five segments, each immediately identifying one thing:
+- **`HP`** — the platform (HustlerPay). Consistent with the already-
+  reserved `ReferenceProduct.HUSTLERPAY = "HP"` in the shipped Android
+  `ReferenceGenerator`, and with the wider `HP-<ORG>-…` reference
+  strategy for transactions.
+- **`<ORG>`** — the organization the quote belongs to (e.g. `TGA`).
+  **One sub-decision surfaced honestly, not glossed**: an anonymous
+  Marketing visitor has no organization — the org segment needs a
+  defined value for public/anonymous quotes. Proposed: **`PUB`**
+  (`HP-PUB-QP-…`), to be confirmed by the user before Sprint B encodes
+  it. Whatever the value, it must be a single fixed constant, never
+  inferred/guessed per request.
+- **`<TYPE>`** — the object type: **`QP`** (Quote Preview — emitted by
+  `LocalQuoteEngine` and any future demo/preview path) and **`QT`**
+  (real Quote — emitted by the backend engine). Other object types
+  (transactions etc.) slot into the same position in their own
+  reference families.
+- **`yyMMdd`** — generation date, same convention as the shipped
+  `MA-yyMMdd-XXXXXX` format.
+- **unique suffix** — 6 random alphanumeric characters, same mechanics
+  as the shipped `ReferenceGenerator`.
+
+Unchanged from the original proposal (these carry over as-is):
+- `Quote.reference` is a required contract field, generated **by the
+  engine** at generation time — the engine is the identity authority; a
+  reference is proof a specific engine produced a specific result.
+  Client-generated IDs would be meaningless for support/debugging.
+- Sprint A's `LocalQuoteEngine` can adopt `HP-PUB-QP-…` (pending the
+  `PUB` confirmation) immediately — even a demo screenshot then carries
+  a citable identity.
+- A reference is **not** persistence: it identifies a generation event
+  (logs, screenshots, support); whether a `QT` quote is *retrievable
   later* remains governed by open question #4 (frozen links), untouched
   here.
 
-### Recommendation: adopt as proposed (with `QQ` vs `QT` left to the user).
+**Honest precedent note**: the only reference format actually shipped
+in the ecosystem today is the Android `MA-yyMMdd-XXXXXX` (product
+prefix + date + suffix, no org segment) — the fuller
+`HP-<ORG>-<TYPE>-…` hierarchy is the platform's declared direction (and
+`HP` is already reserved for it), but quote references will be its
+first shipped implementation. If transactions later adopt the same
+hierarchy, quotes will already be aligned instead of needing a rename.
 
 ---
 
@@ -199,14 +244,16 @@ third format.
 ## What Sprint B looks like once this package is approved
 
 1. Backend: new `quotes` NestJS module (`/api/v1/quotes`,
-   `/api/v1/corridors`), Prisma models for the administered rate/fee
-   tables (empty until the business decides real values), the layered
-   resolution skeleton (ADR-3), server-resolved pricing context (ADR-2),
-   `QT-` references (ADR-4). Anonymous access for the quote endpoint
-   (Marketing's consumer), token auth deferred with open question #5.
+   `/api/v1/corridors`), Prisma models for the administered Treasury
+   Rate/fee tables (empty until the business decides real values), the
+   five-layer resolution skeleton (ADR-3), server-resolved pricing
+   context (ADR-2), `HP-<ORG>-QT-…` references (ADR-4). Anonymous
+   access for the quote endpoint (Marketing's consumer), token auth
+   deferred with open question #5.
 2. Marketing: `BackendQuoteEngine implements QuoteEngineProvider` — the
-   §12 one-line composition-root swap, plus `QP-` references in
-   `LocalQuoteEngine`.
+   §12 one-line composition-root swap, plus `HP-PUB-QP-…` references in
+   `LocalQuoteEngine` (pending the `PUB` org-segment confirmation,
+   ADR-4).
 3. **No real numbers displayed publicly** until the ADR-3 rate table has
    real, business-committed values — the demo banner and noindex stay
    until then (the N1 decision is part of that same activation
