@@ -1,6 +1,11 @@
 # Quote Engine — Architecture Decision Package (WEB-CALC-3 Sprint B0)
 
-Status: **under final user review before push** — direction approved
+Status: **FINALIZED (2026-07-08) — Sprint B0 closed.** All four ADRs
+approved by the user, including the final refinements (Treasury Rate
+commitment sentence, `PUB` as a Reserved Organization Identifier, the
+platform reference-type registry). This document is the reference
+record ("la charte du Quote Engine") for Sprint B and every future
+Quote Engine consumer. History of how it got here — direction approved
 2026-07-08: **ADR-1 ✅ approved** (Backend Quote Engine — "un moteur
 embarqué dans le frontend créerait deux sources de vérité"), **ADR-2 ✅
 approved** (server-resolved pricing context — "le client ne dit jamais
@@ -137,6 +142,12 @@ the layers above Treasury Rate exist so that, when a Market Feed is
 eventually wired, it *informs* the administered rate rather than
 bypassing it straight to the customer.
 
+> **Treasury Rate is the first business-owned commitment. Everything
+> above it is informational. Everything below it is contractual.**
+
+(The platform's philosophy in one sentence: the market informs, the
+treasury decides, the Quote Engine commits.)
+
 ### Options for v1's actual source
 
 | Option | For | Against |
@@ -188,17 +199,27 @@ Five segments, each immediately identifying one thing:
   `ReferenceGenerator`, and with the wider `HP-<ORG>-…` reference
   strategy for transactions.
 - **`<ORG>`** — the organization the quote belongs to (e.g. `TGA`).
-  **One sub-decision surfaced honestly, not glossed**: an anonymous
-  Marketing visitor has no organization — the org segment needs a
-  defined value for public/anonymous quotes. Proposed: **`PUB`**
-  (`HP-PUB-QP-…`), to be confirmed by the user before Sprint B encodes
-  it. Whatever the value, it must be a single fixed constant, never
+  For anonymous public quotes (a Marketing visitor has no
+  organization), the segment is **`PUB` — confirmed 2026-07-08**.
+  `PUB` is **not an organization**: it is a **Reserved Organization
+  Identifier** representing the Anonymous Public Context, and must
+  never be assignable to a real company — the backend's organization
+  layer must treat `PUB` (and any future reserved identifier) as a
+  forbidden organization code at creation time, so no real org can
+  ever collide with it. It is a single fixed constant, never
   inferred/guessed per request.
-- **`<TYPE>`** — the object type: **`QP`** (Quote Preview — emitted by
-  `LocalQuoteEngine` and any future demo/preview path) and **`QT`**
-  (real Quote — emitted by the backend engine). Other object types
-  (transactions etc.) slot into the same position in their own
-  reference families.
+- **`<TYPE>`** — the object type. Registry of platform reference type
+  codes (this document is the reference for the whole platform, not
+  just quotes — only `QP`/`QT` ship with the Quote Engine; the others
+  are reserved so future domains align instead of inventing formats):
+
+  | Type | Meaning | Status |
+  |---|---|---|
+  | `QP` | Quote Preview (demo/preview engines, e.g. `LocalQuoteEngine`) | Ships with Sprint A/B |
+  | `QT` | Quote (real backend engine) | Ships with Sprint B |
+  | `TX` | Transaction | Reserved |
+  | `RF` | Refund | Reserved |
+  | *…* | Future object types (Jobs, Runtime, Ledger, Audit, …) | Reserved — added here first, never improvised |
 - **`yyMMdd`** — generation date, same convention as the shipped
   `MA-yyMMdd-XXXXXX` format.
 - **unique suffix** — 6 random alphanumeric characters, same mechanics
@@ -209,9 +230,9 @@ Unchanged from the original proposal (these carry over as-is):
   engine** at generation time — the engine is the identity authority; a
   reference is proof a specific engine produced a specific result.
   Client-generated IDs would be meaningless for support/debugging.
-- Sprint A's `LocalQuoteEngine` can adopt `HP-PUB-QP-…` (pending the
-  `PUB` confirmation) immediately — even a demo screenshot then carries
-  a citable identity.
+- Sprint A's `LocalQuoteEngine` can adopt `HP-PUB-QP-…` immediately
+  (`PUB` confirmed) — even a demo screenshot then carries a citable
+  identity.
 - A reference is **not** persistence: it identifies a generation event
   (logs, screenshots, support); whether a `QT` quote is *retrievable
   later* remains governed by open question #4 (frozen links), untouched
@@ -252,8 +273,7 @@ hierarchy, quotes will already be aligned instead of needing a rename.
    deferred with open question #5.
 2. Marketing: `BackendQuoteEngine implements QuoteEngineProvider` — the
    §12 one-line composition-root swap, plus `HP-PUB-QP-…` references in
-   `LocalQuoteEngine` (pending the `PUB` org-segment confirmation,
-   ADR-4).
+   `LocalQuoteEngine` (`PUB` confirmed, ADR-4).
 3. **No real numbers displayed publicly** until the ADR-3 rate table has
    real, business-committed values — the demo banner and noindex stay
    until then (the N1 decision is part of that same activation
